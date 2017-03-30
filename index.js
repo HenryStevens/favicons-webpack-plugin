@@ -64,6 +64,24 @@ FaviconsWebpackPlugin.prototype.apply = function (compiler) {
     });
   }
 
+  // Edit the manifest with the folder prefix
+  // Copy manifest.json into the top directory
+  if (self.options.hasOwnProperty('manifest')) {
+    compiler.plugin('after-emit', function (compilation, callback) {
+      compilationResult.stats.files.filter(function (entry) {
+        return entry.indexOf('manifest.json') > 1;
+      }).map(function (entry) {
+        var obj = JSON.parse(fs.readFileSync(compilation.options.output.path + '/' + entry, 'utf8'));
+        obj = _.extend(obj, self.options.manifest);
+        obj.icons.map((ele, index) => {
+          ele.src = compilationResult.stats.outputFilePrefix + ele.src;
+        });
+        fs.writeFile(compilation.options.output.path + '/manifest.json', JSON.stringify(obj), 'utf8', callback);
+      });
+      callback();
+    });
+  }
+
   // Remove the stats from the output if they are not required
   if (!self.options.emitStats) {
     compiler.plugin('emit', function (compilation, callback) {
